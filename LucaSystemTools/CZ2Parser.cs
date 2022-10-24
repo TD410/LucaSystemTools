@@ -114,63 +114,28 @@ namespace ProtImage
                 {
                     queue.Enqueue(b);
                 }
-                bool isError = false;
                 // var ie = bytes.GetEnumerator();
                 for (int y = 0; y < Header.Heigth; y++)
                 {
                     for (int x = 0; x < Header.Width; x++)
                     {
-                        try
+                        if (queue.Count > 0)
                         {
                             int index = queue.Dequeue();
                             //int index = BitConverter.ToInt16(new byte[] { ie.Current, 0x00 }, 0);
                             Picture.SetPixel(x, y, Color.FromArgb(ColorPanel[index].A, ColorPanel[index].R, ColorPanel[index].G, ColorPanel[index].B));
-
                         }
-                        catch
-                        {
-                            Console.WriteLine(isError);
-                            isError = true;
-                            break;
-                        }
-                    }
-                    if (isError)
-                    {
-                        Console.WriteLine(isError);
-                        break;
                     }
                 }
 
             }
-            //else if (Header.Colorbits == 24)
-            //{
-
-            //    for (int y = 0; y < Header.Heigth; y++)
-            //    for (int x = 0; x < Header.Width; x++)
-            //    {
-            //        Pixel24 Pixel = new Pixel24();
-            //        Reader.ReadStruct(ref Pixel);
-            //        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
-            //    }
-            //}
-            //else if (Header.Colorbits == 32)//32
-            //{
-
-            //    for (int y = 0; y < Header.Heigth; y++)
-            //    for (int x = 0; x < Header.Width; x++)
-            //    {
-            //        Pixel32 Pixel = new Pixel32();
-            //        Reader.ReadStruct(ref Pixel);
-            //        Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
-            //    }
-            //}
             Reader.Close();
             return Picture;
         }
 
         //作者：Wetor
         //时间：2019.1.18
-        public void PngToCZ1(string outfile)
+        public void PngToCZ2(string outfile)
         {
             Bitmap Picture = new Bitmap(File.Open(outfile, FileMode.Open));
             StructWriter Writer = new StructWriter(File.Open(outfile + ".cz1", FileMode.Create));
@@ -275,7 +240,7 @@ namespace ProtImage
 
         }
    
-        public void CZ1ToPng(string infile)
+        public void CZ2ToPng(string infile)
         {
             BinaryReader br = new BinaryReader(File.Open(infile, FileMode.Open));
             Bitmap texture = Export(br.ReadBytes((int)br.BaseStream.Length));
@@ -285,12 +250,12 @@ namespace ProtImage
 
         public override void FileExport(string path, string outpath = null)
         {
-            CZ1ToPng(path);
+            CZ2ToPng(path);
         }
 
         public override void FileImport(string path, string outpath = null)
         {
-            PngToCZ1(path);
+            PngToCZ2(path);
         }
     }
 
