@@ -1,0 +1,57 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="OPCODE\CL.txt" />
+    <None Remove="OPCODE\ISLAND.txt" />
+    <None Remove="OPCODE\SP.txt" />
+    <None Remove="OPCODE\TAWL.txt" />
+    <None Remove="OPCODE\FLOWERS.txt" />
+    <None Remove="OPCODE\FLOWERS_PSV.txt" />
+    <None Remove="OPCODE\FLOWERS2_PSV.txt" />
+    <None Remove="OPCODE\FLOWERS3_PSV.txt" />
+	<None Remove="OPCODE\FLOWERS4_PSV.txt" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="OPCODE\CL.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\ISLAND.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\SP.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\TAWL.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\FLOWERS.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\FLOWERS_PSV.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\FLOWERS2_PSV.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OPCODE\FLOWERS3_PSV.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+	<Content Include="OPCODE\FLOWERS4_PSV.txt">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="McMaster.Extensions.CommandLineUtils" Version="3.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="System.Drawing.Common" Version="5.0.0-preview.7.20364.11" />
+	<PackageReference Include="System.Text.Encoding.CodePages" Version="5.0.0-preview.7.20364.11" />
+  </ItemGroup>
+
+</Project>

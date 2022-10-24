@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "LucaSystemTools": {
+      "commandName": "Project",
+      "commandLineArgs": "-t scr -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\LucaScript\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\CSV_DC\" -c \"E:\\Utility\\AAPatchTools\\LucaSystemTool\\TAIALI.txt\" -csv"
+    },
+    "Font": {
+      "commandName": "Project",
+      "commandLineArgs": "-t cz2 -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\Font\\ゴシック12\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\FontImage\\ゴシック12.png\""
+    }
+  }
+}
