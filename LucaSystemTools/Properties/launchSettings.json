@@ -7,6 +7,14 @@
     "Font": {
       "commandName": "Project",
       "commandLineArgs": "-t cz2 -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\Font\\ゴシック12\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\FontImage\\ゴシック12.png\""
+    },
+    "Pak export": {
+      "commandName": "Project",
+      "commandLineArgs": "-t pak -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\HeadAndTail\\FONT.original.PAK\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\HeadAndTail\\FONT.original.PAK Unpack\""
+    },
+    "Pak import": {
+      "commandName": "Project",
+      "commandLineArgs": "-t pak -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\4.2 - FONT.PAK Repack\\FONT.changed\\FONT.PAK\""
     }
   }
 }
