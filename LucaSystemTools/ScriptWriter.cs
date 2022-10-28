@@ -124,7 +124,8 @@ namespace ProtScript
 
         public bool LoadCsv(string path)
         {
-            if (path.EndsWith(".json")) return false;
+            if (path.EndsWith(".json") || path.Contains("TABLE")) return false;
+            Console.WriteLine(Path.GetFileName(path));
 
             var jsonPath = path.Replace(".csv", ".json");
 
@@ -192,15 +193,35 @@ namespace ProtScript
                     }
                     string nameTranslated;
                     tableName.TryGetValue(nameJp, out nameTranslated);
-                    nameTranslated = string.IsNullOrWhiteSpace(nameTranslated) ? nameJp : (nameTranslated.Trim() + "@");
-                    nameJp = string.IsNullOrWhiteSpace(nameJp) ? "" : (nameJp.Trim() + "@");
+                    nameTranslated = string.IsNullOrWhiteSpace(nameTranslated) ? nameJp : (nameTranslated + "@");
+                    nameJp = string.IsNullOrEmpty(nameJp) ? "" : (nameJp + "@");
 
                     string fullLine = string.Format("{0}{1}{2}", prefix, nameTranslated, vietnamese);
                     string fullLineOriginal = string.Format("{0}{1}{2}", prefix, nameJp, japanese);
+                    // Multiline fullscreen
                     if (prefix == "$A1" && (fullLineOriginal.Contains("\n") || fullLine.Contains("$n") || fullLine.Contains("\n"))) {
                         fullLine = fullLine.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
                         fullLineOriginal = fullLineOriginal.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
                     }
+                    // Both prefix and empty name
+                    else if (prefix == "$A1" && fullLineOriginal.Contains('`') && fullLineOriginal.Contains("@"))
+                    {
+                        // $A1`　@「ごめんなさい」 ==>  `　@$A1「ごめんなさい」
+                        var parts = fullLineOriginal.Replace("$A1","").Split("@");
+                        fullLineOriginal = parts[0] + "@" + "$A1" + parts[1];
+                        var parts2 = fullLine.Replace("$A1", "").Split("@");
+                        if (parts2.Length == 2)
+                        {
+                            fullLine = parts2[0] + "@" + "$A1" + parts2[1];
+                        }
+                    }
+                    // Has speaker prefix but no name
+                    else if (prefix == "`" && fullLineOriginal.Contains("@") && string.IsNullOrWhiteSpace(nameJp))
+                    {
+                        fullLineOriginal = fullLineOriginal.Replace("`@", "`　@");
+                        fullLine = fullLine.Replace("`@", "`　@");
+                    }
+
                     translatedLines.Add(fullLine);
                     originalLines.Add(fullLineOriginal);
                 }
