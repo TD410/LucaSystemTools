@@ -7,6 +7,8 @@ using System.IO;
 using System.Text;
 using LucaSystem;
 using LucaSystemTools;
+using LzwGifTools;
+using System.Linq;
 
 namespace ProtImage
 {
@@ -24,36 +26,32 @@ namespace ProtImage
             for (int i = 0; i < fileCount; i++)
             {
                 uint fileCompressedSize = Reader.ReadUInt32();
+                compressedSizeList.Add(i, fileCompressedSize);
                 uint fileRawSize = Reader.ReadUInt32();
                 rawSizeList.Add(i, fileRawSize);
-                compressedSizeList.Add(i, fileCompressedSize);
             }
-
+            var decoder = new LzwGifTools.Decoder(127);
             for (int i = 0; i < fileCount; i++)
             {
-                List<UInt16> lmzBytes = new List<UInt16>();
+                var lmzBytes = new List<byte>();
                 int totalcount = (int)compressedSizeList[i];
-                for (int j = 0; j < totalcount/2; j++)
+
+                for (int j = 0; j < totalcount; j++)
                 {
-                    lmzBytes.Add(Reader.ReadUInt16());
+                    lmzBytes.Add(Reader.ReadByte());
                 }
-                //解压lzw
-                /*byte[] re = unlzw(lmzBytes.ToArray());
-                output.AddRange(re);*/
-                string str = Lzw2Util.Decompress(lmzBytes);
-                foreach (var c in str)
-                {
-                    output.Add((byte)c);
-                }
+                var outInts = decoder.Decode(lmzBytes);
+                var outBytes = outInts.SelectMany(BitConverter.GetBytes).ToArray();
+
+                output.AddRange(outBytes);
             }
             return output;
         }
 
-
-        private Bitmap Export(byte[] Texture)
+        public Bitmap Export(byte[] Texture, string name = "")
         {
             StructReader Reader = new StructReader(new MemoryStream(Texture));
-            CZ2Header Header = new CZ2Header();
+            CZ1Header Header = new CZ1Header();
             Reader.ReadStruct(ref Header);
 
             if (Header.Signature != "CZ2\x0")
@@ -61,7 +59,7 @@ namespace ProtImage
 
             Reader.Seek(Header.HeaderLength, SeekOrigin.Begin);
             Bitmap Picture = new Bitmap(Header.Width, Header.Heigth, PixelFormat.Format32bppArgb);
-
+            
             if (Header.Colorbits == 4)//4bit
             {
                 //字库格式
@@ -76,7 +74,7 @@ namespace ProtImage
                 }
 
                 //lmz解压
-                var bytes = Decompress(Reader);
+                var bytes = Decompress(Reader, name);
 
                 //解压后的像素
                 Queue<int> queue = new Queue<int>();
@@ -107,6 +105,7 @@ namespace ProtImage
                     Reader.ReadStruct(ref Pixel);
                     ColorPanel[i] = Pixel;
                 }
+                var pos = Reader.BaseStream.Position;
 
                 var bytes = Decompress(Reader);
                 Queue<int> queue = new Queue<int>();
@@ -119,15 +118,43 @@ namespace ProtImage
                 {
                     for (int x = 0; x < Header.Width; x++)
                     {
-                        if (queue.Count > 0)
-                        {
-                            int index = queue.Dequeue();
-                            //int index = BitConverter.ToInt16(new byte[] { ie.Current, 0x00 }, 0);
-                            Picture.SetPixel(x, y, Color.FromArgb(ColorPanel[index].A, ColorPanel[index].R, ColorPanel[index].G, ColorPanel[index].B));
-                        }
+                        if (queue.Count == 0) break;
+                        int index = queue.Dequeue();
+                        //int index = BitConverter.ToInt16(new byte[] { ie.Current, 0x00 }, 0);
+                        Picture.SetPixel(x, y, Color.FromArgb(ColorPanel[index].A, ColorPanel[index].R, ColorPanel[index].G, ColorPanel[index].B));
                     }
+                    if (queue.Count == 0) break;
                 }
 
+            }
+            else if (Header.Colorbits == 24)
+            {
+                System.Diagnostics.Debug.WriteLine(24);
+                List<byte> bytes = (List<byte>)Decompress(Reader);
+                Reader = new StructReader(new MemoryStream(bytes.ToArray()));
+
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        Pixel24_RGB Pixel = new Pixel24_RGB();
+                        Reader.ReadStruct(ref Pixel);
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.R, Pixel.G, Pixel.B));
+                    }
+            }
+            else if (Header.Colorbits == 32)//32
+            {
+                System.Diagnostics.Debug.WriteLine(32);
+                List<byte> bytes = (List<byte>)Decompress(Reader);
+                Reader = new StructReader(new MemoryStream(bytes.ToArray()));
+
+
+                for (int y = 0; y < Header.Heigth; y++)
+                    for (int x = 0; x < Header.Width; x++)
+                    {
+                        Pixel32_RGBA Pixel = new Pixel32_RGBA();
+                        Reader.ReadStruct(ref Pixel);
+                        Picture.SetPixel(x, y, Color.FromArgb(Pixel.A, Pixel.R, Pixel.G, Pixel.B));
+                    }
             }
             Reader.Close();
             return Picture;

@@ -533,16 +533,23 @@ namespace ProtScript
             {
                 outpath = path + ".scr";
             }
-            if(FormatJson || FormatLua)
+            if(FormatJson || FormatLua || FormatCsv)
             {
                 ScriptWriter scriptWriter = new ScriptWriter(outpath, compress_dic);
-                if (FormatJson)
+                var isCorrectFile = true;
+                if (FormatCsv)
+                    isCorrectFile = scriptWriter.LoadCsv(path);
+                else if (FormatJson)
                     scriptWriter.LoadJson(path);
                 else if(FormatLua)
                     scriptWriter.LoadLua(path);
 
-                scriptWriter.WriteScript();
-                scriptWriter.Close();
+                if (isCorrectFile)
+                {
+                    scriptWriter.WriteScript();
+                    scriptWriter.Close();
+                }
+
             }
             else if (FormatOld)
             {

@@ -9,19 +9,20 @@ namespace LucaSystem
     //from http://rosettacode.org/wiki/LZW_compression#C.23
     public class Lzw2Util
     {
+        public static int DictionarySize = 65536;
 
         public static string Decompress(List<UInt16> compressed)
         {
             // build the dictionary
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 65536; i++)
+            for (int i = 0; i < DictionarySize; i++)
                 dictionary.Add(i, ((char)i).ToString());
 
             string w = dictionary[0];
-            compressed.RemoveAt(0);
+            //compressed.RemoveAt(0);
             StringBuilder decompressed = new StringBuilder();
-            var a = compressed.Max();
-            foreach (UInt16 k in compressed)
+
+            foreach (int k in compressed)
             {
                 string entry = null;
                 if (dictionary.ContainsKey(k))

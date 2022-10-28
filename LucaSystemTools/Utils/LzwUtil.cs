@@ -10,12 +10,14 @@ namespace LucaSystem
     //from http://rosettacode.org/wiki/LZW_compression#C.23
     public class LzwUtil
     {
+        public static int DictionarySize = 256;
+
         //island flower start with 0
         public static string Decompress(List<int> compressed)
         {
             // build the dictionary
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 256; i++) 
+            for (int i = 0; i < DictionarySize; i++) 
                 dictionary.Add(i, ((char)i).ToString());
 
             string w = dictionary[0];
@@ -46,9 +48,9 @@ namespace LucaSystem
         {
             // build the dictionary
             Dictionary<string, int> dictionary = new Dictionary<string, int>();
-            for (int i = 0; i < 256; i++)
+            for (int i = 0; i < DictionarySize; i++)
                 dictionary.Add(((char)i).ToString(), i);
-            dictionary.Add(((char)256).ToString(), 0);
+            dictionary.Add(((char)DictionarySize).ToString(), 0);
             string w = string.Empty;
             List<int> compressed = new List<int>();
             foreach (char c in uncompressed)
@@ -83,9 +85,9 @@ namespace LucaSystem
             {
                 Dictionary<string, int> dictionary = new Dictionary<string, int>();
                 int count = 0;
-                for (int i = 0; i < 256; i++)
+                for (int i = 0; i < DictionarySize; i++)
                     dictionary.Add(((char)i).ToString(), i);
-                dictionary.Add(((char)256).ToString(), 0);
+                dictionary.Add(((char)DictionarySize).ToString(), 0);
                 string w = string.Empty;
                 if (lastw != string.Empty)
                 {
@@ -153,12 +155,12 @@ namespace LucaSystem
             return out_list;
         }
 
-        //air cl rewrite start with 256
+        //air cl rewrite start with DictionarySize
         public static string Decompress2(List<int> compressed)
         {
             // build the dictionary
             Dictionary<int, string> dictionary = new Dictionary<int, string>();
-            for (int i = 0; i < 256 + 1; i++)
+            for (int i = 0; i < DictionarySize + 1; i++)
                 dictionary.Add(i, ((char)i).ToString());
 
             string w = dictionary[compressed[0]];

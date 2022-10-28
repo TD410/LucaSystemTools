@@ -5,6 +5,7 @@ using System.IO;
 using Newtonsoft.Json;
 using LucaSystemTools;
 using ProtScript.Entity;
+using Microsoft.VisualBasic.FileIO;
 
 namespace ProtScript
 {
@@ -120,6 +121,134 @@ namespace ProtScript
                 }
             }
         }
+
+        public bool LoadCsv(string path)
+        {
+            if (path.EndsWith(".json")) return false;
+
+            var jsonPath = path.Replace(".csv", ".json");
+
+            // Read Json
+            JsonSerializerSettings jsetting = new JsonSerializerSettings();
+            jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
+            StreamReader sr = new StreamReader(jsonPath, Encoding.UTF8);
+            script = JsonConvert.DeserializeObject<ScriptEntity>(sr.ReadToEnd(), jsetting);
+            sr.Close();
+
+            // Read TABLE.txt
+            var table = new List<(string from, string to)>();
+            var tablePath = Path.Combine(Path.GetDirectoryName(path), "TABLE.txt");
+            if (!File.Exists(tablePath)) throw new Exception("TABLE.txt missing");
+            StreamReader sr2 = new StreamReader(tablePath, Encoding.UTF8);
+            var tableLines = sr2.ReadToEnd().Split("\n");
+            sr2.Close();
+            foreach(var line in tableLines)
+            {
+                var parts = line.Split("=");
+                table.Add((parts[0].Trim(), parts[1].Trim()));
+            }
+
+            // Read TABLE_NAME.csv
+            var tableName = new Dictionary<string, string>();
+            var tableNamePath = Path.Combine(Path.GetDirectoryName(path), "TABLE_NAME.csv");
+            if (!File.Exists(tableNamePath)) throw new Exception("TABLE_NAME.csv missing");
+            StreamReader sr3 = new StreamReader(tableNamePath, Encoding.UTF8);
+            var tableNameLines = sr3.ReadToEnd().Split("\n");
+            sr3.Close();
+            foreach (var line in tableNameLines)
+            {
+                var parts = line.Split(",");
+                if (parts.Length == 2)
+                {
+                    tableName.Add(parts[0].Trim(), parts[1].Trim());
+                }
+            }
+
+            // Read CSV
+            var translatedLines = new List<string>();
+            var originalLines = new List<string>();
+            using (TextFieldParser parser = new TextFieldParser(path))
+            {
+                parser.TextFieldType = FieldType.Delimited;
+                parser.SetDelimiters(",");
+                while (!parser.EndOfData)
+                {
+                    //Process row
+                    string[] fields = parser.ReadFields();
+                    string ID = fields[0];
+                    string japanese = fields[1];
+                    string vietnamese = fields[2];
+                    string english = fields[3];
+                    var IDParts = ID.Split("_");
+                    var countAll = IDParts[0];
+                    var linePos = IDParts[1].Replace("[","").Replace("]","");
+                    var prefix = IDParts[2];
+                    var nameJp = IDParts[3];
+                    var nameEn = IDParts[4];
+
+                    foreach(var tableReplace in table)
+                    {
+                        vietnamese = vietnamese.Replace(tableReplace.from, tableReplace.to);
+                    }
+                    string nameTranslated;
+                    tableName.TryGetValue(nameJp, out nameTranslated);
+                    nameTranslated = string.IsNullOrWhiteSpace(nameTranslated) ? nameJp : (nameTranslated.Trim() + "@");
+                    nameJp = string.IsNullOrWhiteSpace(nameJp) ? "" : (nameJp.Trim() + "@");
+
+                    string fullLine = string.Format("{0}{1}{2}", prefix, nameTranslated, vietnamese);
+                    string fullLineOriginal = string.Format("{0}{1}{2}", prefix, nameJp, japanese);
+                    if (prefix == "$A1" && (fullLineOriginal.Contains("\n") || fullLine.Contains("$n") || fullLine.Contains("\n"))) {
+                        fullLine = fullLine.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
+                        fullLineOriginal = fullLineOriginal.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
+                    }
+                    translatedLines.Add(fullLine);
+                    originalLines.Add(fullLineOriginal);
+                }
+            }
+
+            // Match CSV with codeline
+            var relatedLines = script.lines.FindAll(x =>
+            {
+                return (x.opcode == "MESSAGE" || x.opcode == "CHOICE")
+                && x.paramDatas.Exists(y =>
+                    y.type == DataType.StringUnicode
+                    && !string.IsNullOrEmpty(y.valueString.Trim()));
+            });
+
+            if (relatedLines.Count == translatedLines.Count)
+            {
+                for (var i = 0; i < relatedLines.Count; i++)
+                {
+                    var codeLine = relatedLines[i];
+                    var translatedLine = translatedLines[i];
+                    var originalLine = originalLines[i];
+                    var found = false;
+                    foreach(var paramData in codeLine.paramDatas)
+                    {
+                        if (paramData.type == DataType.StringUnicode && paramData.valueString.Contains(originalLine))
+                        {
+                            paramData.valueString = translatedLine;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
+                    {
+                        throw new Exception("ParamData doesn't contain original japanese text");
+                    }
+                }
+            } else
+            {
+                throw new Exception("Line numbers in json and csv doesn't match.");
+            }
+
+            if (script.toolVersion > Program.toolVersion)
+            {
+                throw new Exception(String.Format("Tool version is {0}, but this file version is {1}!", Program.toolVersion, script.toolVersion));
+            }
+            return true;
+        }
+
         public void LoadJson(string path)
         {
             JsonSerializerSettings jsetting = new JsonSerializerSettings();

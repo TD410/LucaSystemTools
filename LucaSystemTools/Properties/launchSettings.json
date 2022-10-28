@@ -2,11 +2,11 @@
   "profiles": {
     "LucaSystemTools": {
       "commandName": "Project",
-      "commandLineArgs": "-t scr -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\LucaScript\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\CSV_DC\" -c \"E:\\Utility\\AAPatchTools\\LucaSystemTool\\TAIALI.txt\" -csv"
+      "commandLineArgs": "-t scr -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\LucaScript\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\JSON_NEW\" -c \"E:\\Utility\\AAPatchTools\\LucaSystemTool\\TAIALI.txt\" -json"
     },
     "Font": {
       "commandName": "Project",
-      "commandLineArgs": "-t cz2 -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\Font\\ゴシック12\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\FontImage\\ゴシック12.png\""
+      "commandLineArgs": "-t info -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\HeadAndTail\\InfoText Changed\\info35_dicStr_sort2.txt\""
     },
     "Pak export": {
       "commandName": "Project",
@@ -15,6 +15,10 @@
     "Pak import": {
       "commandName": "Project",
       "commandLineArgs": "-t pak -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\4.2 - FONT.PAK Repack\\FONT.changed\\FONT.PAK\""
+    },
+    "CSV Import": {
+      "commandName": "Project",
+      "commandLineArgs": "-t scr -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\CSV_Translated\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\LucaScript_Translated\" -c \"E:\\Utility\\AAPatchTools\\LucaSystemTool\\TAIALI.txt\" -csv"
     }
   }
 }
