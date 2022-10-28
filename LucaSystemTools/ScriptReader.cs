@@ -262,7 +262,7 @@ namespace ProtScript
             JsonSerializerSettings jsetting = new JsonSerializerSettings();
             jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
             StreamWriter sw = new StreamWriter(path, false, Encoding.UTF8);
-            sw.WriteLine(JsonConvert.SerializeObject(script, Formatting.None, jsetting));
+            sw.WriteLine(JsonConvert.SerializeObject(script, Formatting.Indented, jsetting));
             sw.Close();
         }
 

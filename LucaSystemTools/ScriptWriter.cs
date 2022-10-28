@@ -43,7 +43,7 @@ namespace ProtScript
         {
             WriteParamData();
 
-            using (BinaryWriter bw = new BinaryWriter(File.Open(outpath, FileMode.Create)))
+            using (BinaryWriter bw = new BinaryWriter(File.Open(outpath, FileMode.OpenOrCreate)))
             {
                 foreach (var code in script.lines)
                 {
@@ -127,7 +127,7 @@ namespace ProtScript
             }
         }
 
-        public bool LoadCsv(string path)
+        public bool LoadCsv(string path, string outPath)
         {
             if (path.EndsWith(".json") || path.Contains("TABLE")) return false;
             Console.WriteLine(Path.GetFileName(path));
@@ -187,41 +187,55 @@ namespace ProtScript
                     string english = fields[3];
                     var IDParts = ID.Split("_");
                     var countAll = IDParts[0];
-                    var linePos = IDParts[1].Replace("[","").Replace("]","");
+                    var linePos = IDParts[1].Replace("[", "").Replace("]", "");
                     var prefix = IDParts[2];
                     var nameJp = IDParts[3];
                     var nameEn = IDParts[4];
 
-                    foreach(var tableReplace in table)
+                    foreach (var tableReplace in table)
                     {
                         vietnamese = vietnamese.Replace(tableReplace.from, tableReplace.to);
                     }
                     string nameTranslated;
                     tableName.TryGetValue(nameJp, out nameTranslated);
-                    nameTranslated = string.IsNullOrWhiteSpace(nameTranslated) ? nameJp : (nameTranslated + "@");
-                    nameJp = string.IsNullOrEmpty(nameJp) ? "" : (nameJp + "@");
+                    nameJp = string.IsNullOrEmpty(nameJp) ? "" : nameJp;
+                    nameTranslated = string.IsNullOrEmpty(nameTranslated) ? nameJp : nameTranslated;
 
-                    string fullLine = string.Format("{0}{1}{2}", prefix, nameTranslated, vietnamese);
-                    string fullLineOriginal = string.Format("{0}{1}{2}", prefix, nameJp, japanese);
+                    string fullLineOriginal = "";
+                    string fullLine = "";
+
+                    vietnamese = vietnamese.Replace("\n", "").Replace("$n", "");
+
+                    if (prefix == "`" && !string.IsNullOrWhiteSpace(nameJp))
+                    {
+                        fullLineOriginal = string.Format("{0}{1}@{2}", prefix, nameJp, japanese);
+                        fullLine = vietnamese.Length > 0 ? string.Format("{0}{1}@{2}", prefix, nameTranslated, vietnamese) : fullLineOriginal;
+                    } 
+                    else
+                    {
+                        fullLineOriginal = string.Format("{0}{1}", prefix, japanese);
+                        fullLine = vietnamese.Length > 0 ? string.Format("{0}{1}", prefix, vietnamese) : fullLineOriginal;
+                    }
+
                     // Multiline fullscreen
-                    if (prefix == "$A1" && (fullLineOriginal.Contains("\n") || fullLine.Contains("$n") || fullLine.Contains("\n"))) {
+                    if (prefix == "$A1" && japanese.Contains("\n")) {
                         fullLine = fullLine.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
                         fullLineOriginal = fullLineOriginal.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
                     }
                     // Both prefix and empty name
-                    else if (prefix == "$A1" && fullLineOriginal.Contains('`') && fullLineOriginal.Contains("@"))
+                    else if (prefix == "$A1" && japanese.Contains('`') && japanese.Contains("@"))
                     {
                         // $A1`　@「ごめんなさい」 ==>  `　@$A1「ごめんなさい」
-                        var parts = fullLineOriginal.Replace("$A1","").Split("@");
+                        var parts = japanese.Replace("$A1","").Split("@");
                         fullLineOriginal = parts[0] + "@" + "$A1" + parts[1];
-                        var parts2 = fullLine.Replace("$A1", "").Split("@");
+                        var parts2 = vietnamese.Replace("$A1", "").Split("@");
                         if (parts2.Length == 2)
                         {
                             fullLine = parts2[0] + "@" + "$A1" + parts2[1];
                         }
                     }
                     // Has speaker prefix but no name
-                    else if (prefix == "`" && fullLineOriginal.Contains("@") && string.IsNullOrWhiteSpace(nameJp))
+                    else if (prefix == "`" && japanese.Contains("@") && string.IsNullOrWhiteSpace(nameJp))
                     {
                         fullLineOriginal = fullLineOriginal.Replace("`@", "`　@");
                         fullLine = fullLine.Replace("`@", "`　@");
@@ -233,36 +247,59 @@ namespace ProtScript
             }
 
             // Match CSV with codeline
-            var relatedLines = script.lines.FindAll(x =>
+            var indexes = new List<(int lineIdx, int paramIdx)>();
+            for (var i = 0; i < script.lines.Count; i++)
             {
-                return (x.opcode == "MESSAGE" || x.opcode == "CHOICE")
-                && x.paramDatas.Exists(y =>
-                    y.type == DataType.StringUnicode
-                    && !string.IsNullOrEmpty(y.valueString.Trim()));
-            });
-
-            if (relatedLines.Count == translatedLines.Count)
-            {
-                for (var i = 0; i < relatedLines.Count; i++)
+                var line = script.lines[i];
+                if (line.opcode == "MESSAGE" || line.opcode == "CHOICE")
                 {
-                    var codeLine = relatedLines[i];
-                    var translatedLine = translatedLines[i];
-                    var originalLine = originalLines[i];
-                    var found = false;
-                    foreach(var paramData in codeLine.paramDatas)
+                    for (var j = 0; j < line.paramDatas.Count; j++)
                     {
-                        if (paramData.type == DataType.StringUnicode && paramData.valueString.Contains(originalLine))
+                        var paramData = line.paramDatas[j];
+                        if (paramData.type == DataType.StringUnicode && paramData.valueString != null && !string.IsNullOrEmpty(paramData.valueString.Trim()))
                         {
-                            paramData.valueString = translatedLine;
-                            found = true;
+                            indexes.Add((i, j));
                             break;
                         }
                     }
-                    if (!found)
+                }
+            }
+
+            if (indexes.Count == translatedLines.Count)
+            {
+                for (var i = 0; i < indexes.Count; i++)
+                {
+                    var index = indexes[i];
+                    var textParam = script.lines[index.lineIdx].paramDatas[index.paramIdx];
+                    var lengthParam = script.lines[index.lineIdx].paramDatas[index.paramIdx - 1];
+
+                    var translatedLine = translatedLines[i];
+                    var originalLine = originalLines[i];
+                    if (!textParam.valueString.Trim().Equals(originalLine.Trim()))
                     {
                         throw new Exception("ParamData doesn't contain original japanese text");
+                    } 
+                    else
+                    {
+                        byte[] bytes = Encoding.Unicode.GetBytes(translatedLine);
+                        textParam.valueString = translatedLine;
+                        textParam.valueOp = translatedLine;
+                        textParam.value = translatedLine;      
+                        textParam.bytes = bytes;
+
+                        byte[] bytesLength = BitConverter.GetBytes(translatedLine.Length);
+                        lengthParam.valueString = translatedLine.Length.ToString();
+                        lengthParam.valueOp = (UInt16)translatedLine.Length;
+                        lengthParam.value = (UInt16)translatedLine.Length;
+                        lengthParam.bytes = bytesLength;
                     }
                 }
+
+                StreamWriter sw = new StreamWriter(outPath + ".json", false, Encoding.UTF8);
+                string line = JsonConvert.SerializeObject(script, Formatting.Indented, jsetting);
+                sw.WriteLine(line);
+                sw.Close();
+
             } else
             {
                 throw new Exception("Line numbers in json and csv doesn't match.");
@@ -272,7 +309,7 @@ namespace ProtScript
             {
                 throw new Exception(String.Format("Tool version is {0}, but this file version is {1}!", Program.toolVersion, script.toolVersion));
             }
-            return true;
+            return false;
         }
 
         public void LoadJson(string path)

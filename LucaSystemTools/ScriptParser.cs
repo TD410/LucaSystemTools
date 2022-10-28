@@ -538,7 +538,7 @@ namespace ProtScript
                 ScriptWriter scriptWriter = new ScriptWriter(outpath, compress_dic);
                 var isCorrectFile = true;
                 if (FormatCsv)
-                    isCorrectFile = scriptWriter.LoadCsv(path);
+                    isCorrectFile = scriptWriter.LoadCsv(path, outpath);
                 else if (FormatJson)
                     scriptWriter.LoadJson(path);
                 else if(FormatLua)
