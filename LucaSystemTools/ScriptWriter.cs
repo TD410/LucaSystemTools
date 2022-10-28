@@ -11,8 +11,9 @@ namespace ProtScript
 {
     public class ScriptWriter
     {
-        private FileStream fs;
-        private BinaryWriter bw;
+        // private FileStream fs;
+        // private BinaryWriter bw;
+        private string outpath;
 
         private Dictionary<string, byte> opcodeDict = new Dictionary<string, byte>();
 
@@ -29,84 +30,88 @@ namespace ProtScript
 
         public ScriptWriter(string outpath, Dictionary<string, byte> dict)
         {
-            fs = new FileStream(outpath, FileMode.Create);
-            bw = new BinaryWriter(fs);
+            // fs = new FileStream(outpath, FileMode.Create);
+            this.outpath = outpath;
             opcodeDict = dict;
         }
         public void Close()
         {
-            bw.Close();
-            fs.Close();
+            // bw.Close();
+            // fs.Close();
         }
         public void WriteScript()
         {
             WriteParamData();
-            foreach (var code in script.lines)
-            {
-                if (Program.debug)
-                {
-                    Console.WriteLine(fs.Position);
-                    Console.WriteLine(code.ToString());
-                }
-                if (code.isLabel)
-                {
-                    dictLabel.Add(code.label, (uint)fs.Position);
-                }
-                int codeLen = (int)fs.Position;
 
-                if(script.version == 2)
-                {
-                    bw.Write(opcodeDict[code.opcode]);
-                    bw.Write((byte)0x00);//长度填充
-                    bw.Write(code.info.ToBytes(2));
-                }
-                else if(script.version == 3)
-                {
-                    bw.Write(new byte[2]);//长度填充
-                    bw.Write(opcodeDict[code.opcode]);
-                    if (code.opcode == "END")
-                    {
-                        code.info.count++;
-                    }
-                    bw.Write(code.info.ToBytes());
-                }
-                foreach (var param in code.paramDatas)
-                {
-                    if (param.bytes == null)
-                    {
-                        throw new Exception("语句解析错误！" + code.ToString() + "  参数为null！" + param.valueString);
-                    }
-                    if(code.isPosition && param.type == DataType.Position)
-                    {
-                        dictGoto.Add((int)fs.Position, param.valueString);
-                        bw.Write(param.bytes);
-                    }
-                    else
-                    {
-                        bw.Write(param.bytes);
-                    }
-                }
-                codeLen = (int)fs.Position - codeLen;
-                if (script.version == 2)
-                {
-                    fs.Seek(- codeLen + 1, SeekOrigin.Current);
-                    bw.Write((byte)Math.Ceiling(codeLen / 2.0));
-                }
-                else if (script.version == 3)
-                {
-                    fs.Seek(-codeLen, SeekOrigin.Current);
-                    bw.Write(BitConverter.GetBytes((UInt16)codeLen));
-                }
-                fs.Seek(codeLen - 2, SeekOrigin.Current);
-                if (codeLen % 2 != 0)
-                {
-                    bw.Write((byte)0x00);
-                }
-            }
-            foreach (KeyValuePair<int, string> gotokv in dictGoto)
+            using (BinaryWriter bw = new BinaryWriter(File.Open(outpath, FileMode.Create)))
             {
-                fs.Seek(gotokv.Key, SeekOrigin.Begin);
-                bw.Write(BitConverter.GetBytes(dictLabel[gotokv.Value]));
+                foreach (var code in script.lines)
+                {
+                    if (Program.debug)
+                    {
+                        Console.WriteLine(bw.BaseStream.Position);
+                        Console.WriteLine(code.ToString());
+                    }
+                    if (code.isLabel)
+                    {
+                        dictLabel.Add(code.label, (uint)bw.BaseStream.Position);
+                    }
+                    int codeLen = (int)bw.BaseStream.Position;
+
+                    if (script.version == 2)
+                    {
+                        bw.Write(opcodeDict[code.opcode]);
+                        bw.Write((byte)0x00);//长度填充
+                        bw.Write(code.info.ToBytes(2));
+                    }
+                    else if (script.version == 3)
+                    {
+                        bw.Write(new byte[2]);//长度填充
+                        bw.Write(opcodeDict[code.opcode]);
+                        if (code.opcode == "END")
+                        {
+                            code.info.count++;
+                        }
+                        bw.Write(code.info.ToBytes());
+                    }
+                    foreach (var param in code.paramDatas)
+                    {
+                        if (param.bytes == null)
+                        {
+                            throw new Exception("语句解析错误！" + code.ToString() + "  参数为null！" + param.valueString);
+                        }
+                        if (code.isPosition && param.type == DataType.Position)
+                        {
+                            dictGoto.Add((int)bw.BaseStream.Position, param.valueString);
+                            bw.Write(param.bytes);
+                        }
+                        else
+                        {
+                            bw.Write(param.bytes);
+                        }
+                    }
+                    codeLen = (int)bw.BaseStream.Position - codeLen;
+                    if (script.version == 2)
+                    {
+                        bw.BaseStream.Seek(-codeLen + 1, SeekOrigin.Current);
+                        bw.Write((byte)Math.Ceiling(codeLen / 2.0));
+                    }
+                    else if (script.version == 3)
+                    {
+                        bw.BaseStream.Seek(-codeLen, SeekOrigin.Current);
+                        bw.Write(BitConverter.GetBytes((UInt16)codeLen));
+                    }
+                    bw.BaseStream.Seek(codeLen - 2, SeekOrigin.Current);
+                    if (codeLen % 2 != 0)
+                    {
+                        bw.Write((byte)0x00);
+                    }
+                }
+                foreach (KeyValuePair<int, string> gotokv in dictGoto)
+                {
+                    bw.BaseStream.Seek(gotokv.Key, SeekOrigin.Begin);
+                    bw.Write(BitConverter.GetBytes(dictLabel[gotokv.Value]));
+                }
             }
 
         }
