@@ -129,7 +129,7 @@ namespace ProtScript
 
         public bool LoadCsv(string path, string outPath)
         {
-            if (path.EndsWith(".json") || path.Contains("TABLE")) return false;
+            if (path.EndsWith(".json") || path.Contains("TABLE") || path.Contains("FONT")) return false;
             Console.WriteLine(Path.GetFileName(path));
 
             var jsonPath = path.Replace(".csv", ".json");
@@ -170,6 +170,28 @@ namespace ProtScript
                 }
             }
 
+            // Read FONT_WIDTH
+            var fontWidth = new Dictionary<char, int>();
+            var fontWidthPath = Path.Combine(Path.GetDirectoryName(path), "FONT_WIDTH.txt");
+            if (!File.Exists(fontWidthPath)) throw new Exception("FONT_WIDTH.txt missing");
+            StreamReader sr4 = new StreamReader(fontWidthPath, Encoding.UTF8);
+            var fontWidthLines = sr4.ReadToEnd().Split("\n");
+            sr4.Close();
+            foreach (var line in fontWidthLines)
+            {
+                var parts = line.Split("\t");
+                if (parts.Length == 5)
+                {
+                    var widthHex = parts[4].Substring(2, 2);
+                    var width = int.Parse(widthHex, System.Globalization.NumberStyles.HexNumber);
+                    var character = char.Parse(parts[1]);
+                    if (!fontWidth.ContainsKey(character))
+                    {
+                        fontWidth[character] = width;
+                    }
+                }
+            }
+
             // Read CSV
             var translatedLines = new List<string>();
             var originalLines = new List<string>();
@@ -201,11 +223,56 @@ namespace ProtScript
                     nameJp = string.IsNullOrEmpty(nameJp) ? "" : nameJp;
                     nameTranslated = string.IsNullOrEmpty(nameTranslated) ? nameJp : nameTranslated;
 
+                    // Calculate new line
+                    vietnamese = vietnamese.Replace("\n", " ").Replace("\r","").Replace("$n", " ").Replace("  ", " ");
+                    if (vietnamese.Contains("$3") || !vietnamese.Contains("$"))
+                    {
+                        const int MAX_WIDTH = 900; // 35 width * 30 character = 1050, lay 900 cho an toan
+                        var lengthWidth = 0;
+                        var spaceIdx = -1;
+                        var newlineIndexes = new List<int>();
+                        for (var i = 0; i < vietnamese.Length; i++)
+                        {
+                            var character = vietnamese[i];
+                            // Ten Yurika = 120, lay 200 cho an toan
+                            if (character.Equals("$") && vietnamese[i+1].Equals("3"))
+                            {
+                                lengthWidth += 200;
+                            }
+                            // Char khac
+                            else
+                            {
+                                var charWidth = fontWidth[character];
+                                lengthWidth += charWidth;
+                            }                            
+                            if (lengthWidth > MAX_WIDTH)
+                            {
+                                lengthWidth = 0;
+                                if (character.Equals(' ')) spaceIdx = i;
+                                if (spaceIdx > 0)
+                                {
+                                    newlineIndexes.Add(spaceIdx);
+                                    i = spaceIdx + 1;
+                                    spaceIdx = -1;
+                                }
+                            } 
+                            else if (character.Equals(' '))
+                            {
+                                spaceIdx = i;
+                            }
+
+                        }
+                        foreach (var newlineIdx in newlineIndexes)
+                        {
+                            vietnamese = vietnamese.Remove(newlineIdx, 1).Insert(newlineIdx, "\n");
+                        }
+                    }
+
+                    // Construct string
                     string fullLineOriginal = "";
                     string fullLine = "";
 
-                    vietnamese = vietnamese.Replace("\n", "").Replace("$n", "");
-
+                    // Fix special cases
                     if (prefix == "`" && !string.IsNullOrWhiteSpace(nameJp))
                     {
                         fullLineOriginal = string.Format("{0}{1}@{2}", prefix, nameJp, japanese);
@@ -217,8 +284,8 @@ namespace ProtScript
                         fullLine = vietnamese.Length > 0 ? string.Format("{0}{1}", prefix, vietnamese) : fullLineOriginal;
                     }
 
-                    // Multiline fullscreen
-                    if (prefix == "$A1" && japanese.Contains("\n")) {
+                    // Multiline fullscreen middle
+                    if (prefix == "$A1" && (japanese.Contains("\n") || vietnamese.Contains("\n") || vietnamese.Contains("$n"))) {
                         fullLine = fullLine.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
                         fullLineOriginal = fullLineOriginal.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
                     }
