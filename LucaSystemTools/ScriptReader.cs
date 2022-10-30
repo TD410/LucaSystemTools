@@ -274,7 +274,7 @@ namespace ProtScript
             var exportDataTypes = new List<DataType> { DataType.StringUnicode, DataType.StringSJIS, DataType.StringUTF8, DataType.StringCustom };
             script.lines.ForEach(line =>
             {
-                if (!line.opcode.StartsWith("OP_"))
+                if (line.opcode.Equals("MESSAGE") || line.opcode.Equals("CHOICE"))
                 {
                     var textParams = line.paramDatas.Where(x => exportDataTypes.Contains(x.type)).ToList();
                     var jpParam = textParams[0];
