@@ -214,30 +214,37 @@ namespace ProtScript
                     var nameJp = IDParts[3];
                     var nameEn = IDParts[4];
 
-                    foreach (var tableReplace in table)
-                    {
-                        vietnamese = vietnamese.Replace(tableReplace.from, tableReplace.to);
-                    }
                     string nameTranslated;
                     tableName.TryGetValue(nameJp, out nameTranslated);
                     nameJp = string.IsNullOrEmpty(nameJp) ? "" : nameJp;
                     nameTranslated = string.IsNullOrEmpty(nameTranslated) ? nameJp : nameTranslated;
 
-                    // Calculate new line
-                    vietnamese = vietnamese.Replace("\n", " ").Replace("\r","").Replace("$n", " ").Replace("  ", " ");
-                    if (vietnamese.Contains("$3") || !vietnamese.Contains("$"))
+                    foreach (var tableReplace in table)
                     {
-                        const int MAX_WIDTH = 900; // 35 width * 30 character = 1050, lay 900 cho an toan
+                        vietnamese = vietnamese.Replace(tableReplace.from, tableReplace.to);
+                        nameTranslated = nameTranslated.Replace(tableReplace.from, tableReplace.to);
+                    }
+
+                    // Calculate new line
+                    vietnamese = vietnamese.Replace("\n", " ").Replace("\r","").Replace("$n", " ").Replace("  ", " ").TrimEnd();
+                    if (vietnamese.EndsWith("'"))
+                    {
+                        vietnamese = vietnamese.Remove(vietnamese.Length - 1) + "”";
+                    }
+                    
+                    if (vietnamese.Contains("$3") || !vietnamese.Contains("$d"))
+                    {
+                        const int MAX_WIDTH = 1200;
                         var lengthWidth = 0;
                         var spaceIdx = -1;
                         var newlineIndexes = new List<int>();
                         for (var i = 0; i < vietnamese.Length; i++)
                         {
                             var character = vietnamese[i];
-                            // Ten Yurika = 120, lay 200 cho an toan
+                            // Ten Yurika = 83, lay 100 cho an toan
                             if (character.Equals("$") && vietnamese[i+1].Equals("3"))
                             {
-                                lengthWidth += 200;
+                                lengthWidth += 100;
                             }
                             // Char khac
                             else
@@ -261,6 +268,10 @@ namespace ProtScript
                                 spaceIdx = i;
                             }
 
+                        }
+                        if (newlineIndexes.Count > 2) 
+                        {
+                            Console.WriteLine("Warning: Line overflow at: {0}", ID);
                         }
                         foreach (var newlineIdx in newlineIndexes)
                         {
@@ -325,7 +336,10 @@ namespace ProtScript
                         var paramData = line.paramDatas[j];
                         if (paramData.type == DataType.StringUnicode && paramData.valueString != null && !string.IsNullOrEmpty(paramData.valueString.Trim()))
                         {
+                            // japanese
                             indexes.Add((i, j));
+                            // english
+                            // indexes.Add((i, j+2));
                             break;
                         }
                     }
@@ -334,6 +348,9 @@ namespace ProtScript
 
             if (indexes.Count == translatedLines.Count)
             {
+
+                var addCodeLines = new List<(int index, CodeLine line)>();
+
                 for (var i = 0; i < indexes.Count; i++)
                 {
                     var index = indexes[i];
@@ -342,7 +359,7 @@ namespace ProtScript
 
                     var translatedLine = translatedLines[i];
                     var originalLine = originalLines[i];
-                    if (!textParam.valueString.Trim().Equals(originalLine.Trim()))
+                    if (!textParam.valueString.Trim().Equals(originalLine.Trim()) && false)
                     {
                         throw new Exception("ParamData doesn't contain original japanese text");
                     } 
@@ -359,7 +376,40 @@ namespace ProtScript
                         lengthParam.valueOp = (UInt16)translatedLine.Length;
                         lengthParam.value = (UInt16)translatedLine.Length;
                         lengthParam.bytes = bytesLength;
+
+                        // Detect line overflow and add new line
+                        var lineParts = translatedLine.Split("\n");
+                        if (lineParts.Length > 3)
+                        {
+                            var newCodeLineStr = JsonConvert.SerializeObject(script.lines[index.lineIdx], Formatting.Indented, jsetting);
+                            var newCodeLine = JsonConvert.DeserializeObject<CodeLine>(newCodeLineStr);
+                            var newTextParam = newCodeLine.paramDatas[index.paramIdx];
+                            var newLengthParam = newCodeLine.paramDatas[index.paramIdx - 1];
+                            var lineName = translatedLine.Contains("@") ? translatedLine.Split("@")[0] : "";
+                            var newTranslatedLine = !string.IsNullOrEmpty(lineName) ? lineName + "@" + lineParts[lineParts.Length - 1] : lineParts[lineParts.Length - 1];
+
+                            byte[] newBytes = Encoding.Unicode.GetBytes(newTranslatedLine);
+                            newTextParam.valueString = newTranslatedLine;
+                            newTextParam.valueOp = newTranslatedLine;
+                            newTextParam.value = newTranslatedLine;
+                            newTextParam.bytes = newBytes;
+
+                            byte[] newBytesLength = BitConverter.GetBytes(newTranslatedLine.Length);
+                            newLengthParam.valueString = newTranslatedLine.Length.ToString();
+                            newLengthParam.valueOp = (UInt16)newTranslatedLine.Length;
+                            newLengthParam.value = (UInt16)newTranslatedLine.Length;
+                            newLengthParam.bytes = newBytesLength;
+
+                            addCodeLines.Add((index.lineIdx + 1, newCodeLine));
+                        }
                     }
+                }
+
+                // Add new Code line
+                for (var i = 0; i < addCodeLines.Count; i++)
+                {
+                    var insertIdx = addCodeLines[i].index + i;
+                    script.lines.Insert(insertIdx, addCodeLines[i].line);
                 }
 
                 StreamWriter sw = new StreamWriter(outPath + ".json", false, Encoding.UTF8);
@@ -367,7 +417,8 @@ namespace ProtScript
                 sw.WriteLine(line);
                 sw.Close();
 
-            } else
+            } 
+            else
             {
                 throw new Exception("Line numbers in json and csv doesn't match.");
             }

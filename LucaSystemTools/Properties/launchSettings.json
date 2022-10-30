@@ -10,7 +10,7 @@
     },
     "Pak export": {
       "commandName": "Project",
-      "commandLineArgs": "-t pak -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\HeadAndTail\\FONT.original.PAK\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.2 - Fonts\\HeadAndTail\\FONT.original.PAK Unpack\""
+      "commandLineArgs": "-t pak -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\1.2 - DLC RomFS Unpack\\FONT_patch.PAK\""
     },
     "Pak import": {
       "commandName": "Project",

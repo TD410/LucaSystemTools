@@ -133,17 +133,19 @@ namespace ProtPak
             int index = 0;
             foreach (var File in Files)
             {
-                string FN = OutDir + (String.IsNullOrEmpty(File.FileName) ? "NoName " + index.ToString() : File.FileName);
+                var isValidFile = !string.IsNullOrEmpty(File.FileName) && File.FileName.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
+                // string FN = OutDir + "NoName" + index.ToString();
+                string FN = OutDir + (!isValidFile ? "NoName" + index.ToString() : File.FileName);
                 int ID = 2;
                 while (System.IO.File.Exists(FN))
-                    FN = OutDir + File.FileName + "." + ID++;
+                    FN = OutDir + (!isValidFile ? "NoName" + index.ToString() : File.FileName) + "." + ID++;
 
                 try
                 {
                     Stream Output = new StreamWriter(FN).BaseStream;
                     File.Content.CopyTo(Output);
                     Output.Close();
-                    Console.WriteLine("{0} {1} {2}", index++, File.FileName, File.Length);
+                    Console.WriteLine("{0} {1} {2}", index++, FN, File.Length);
                 } catch (Exception e)
                 {
                     Console.WriteLine("Exception at file {0}: {1}", FN ,e.Message);
