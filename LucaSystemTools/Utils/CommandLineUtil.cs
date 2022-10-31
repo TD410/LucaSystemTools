@@ -69,6 +69,9 @@ namespace LucaSystem.Utils
         [Option("-oh|--opcode-help", "Show Opcode help", CommandOptionType.NoValue)]
         public bool OpcodeHelp { get; set; }
 
+        [Option("--split-csv", "Split big csv into smaller csvs", CommandOptionType.NoValue)]
+        public bool SplitCSV { get; set; }
+
         public void OnExecute()
         {
             if (Debug)
@@ -116,6 +119,9 @@ namespace LucaSystem.Utils
                         break;
                     case "info":
                         selclass = new FontInfoParser();
+                        break;
+                    case "csv":
+                        selclass = new CSVParser();
                         break;
                     case "scr":
                         if(!FormatOld && !FormatLua && !FormatLuaE && !FormatJson)
