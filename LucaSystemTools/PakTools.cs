@@ -87,7 +87,21 @@ namespace ProtPak
             {
                 Entry out_file_info;
                 out_file_info.Offset = (uint)(bw.BaseStream.Position / pak_header.BlockSize);
-                out_file_info.Content = File.Open(in_dir + Names[i], FileMode.Open);
+                try
+                {
+                    out_file_info.Content = File.Open(in_dir + Names[i], FileMode.Open);
+                } 
+                catch (Exception e)
+                {
+                    Console.WriteLine("Skip file " + in_dir + Names[i]);
+                    if (i == pak_header.FileCount - 1)
+                        while (bw.BaseStream.Position % pak_header.BlockSize != 0)
+                            bw.Write((byte)0x00);
+
+                    Reader.Seek(0x08, SeekOrigin.Current);
+                    continue;
+                }
+                
                 out_file_info.Length = (uint)out_file_info.Content.Length;
                 
                 out_file_info.Content.CopyTo(bw.BaseStream);

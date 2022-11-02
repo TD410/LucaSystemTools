@@ -14,7 +14,7 @@
     },
     "Pak import": {
       "commandName": "Project",
-      "commandLineArgs": "-t pak -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\4.2 - FONT.PAK Repack\\FONT.changed\\FONT.PAK\""
+      "commandLineArgs": "-t pak -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\2.6 - PARTS.PAK Unpacked\\PARTS.PAK\""
     },
     "CSV Import": {
       "commandName": "Project",
@@ -26,7 +26,7 @@
     },
     "Split CSV": {
       "commandName": "Project",
-      "commandLineArgs": "-t csv -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\VIE_Taishou_x_Alice_All_in_One_010096000CA38000_NinSwitch - SCRIPT.csv\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\test\" --split-csv"
+      "commandLineArgs": "-t csv -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\VIE_Taishou_x_Alice_All_in_One_010096000CA38000_NinSwitch - SCRIPT.csv\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\CSV_Translated\" --split-csv"
     }
   }
 }
