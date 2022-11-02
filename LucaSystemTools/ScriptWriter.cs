@@ -450,7 +450,7 @@ namespace ProtScript
             for (var i = 0; i < script.lines.Count; i++)
             {
                 var line = script.lines[i];
-                if (line.opcode == "MESSAGE" || line.opcode == "CHOICE")
+                if (line.opcode == "MESSAGE" || line.opcode == "CHOICE" || line.opcode == "VARSTR")
                 {
                     for (var j = 0; j < line.paramDatas.Count; j++)
                     {

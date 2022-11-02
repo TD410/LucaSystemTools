@@ -272,13 +272,39 @@ namespace ProtScript
             // sw.WriteLine("ID,NameJp,Japanese,NameEn,English,NameVn,Vietnamese");
             // sw.WriteLine("ID,Japanese,Vietnamese,English");
             var exportDataTypes = new List<DataType> { DataType.StringUnicode, DataType.StringSJIS, DataType.StringUTF8, DataType.StringCustom };
-            script.lines.ForEach(line =>
+            for (var i = 0; i < script.lines.Count; i++)
             {
-                if (line.opcode.Equals("MESSAGE") || line.opcode.Equals("CHOICE"))
+                var line = script.lines[i];
+                if (line.opcode.Equals("MESSAGE") || line.opcode.Equals("CHOICE") || line.opcode.Equals("VARSTR"))
                 {
-                    var textParams = line.paramDatas.Where(x => exportDataTypes.Contains(x.type)).ToList();
-                    var jpParam = textParams[0];
-                    var enParam = textParams[1];
+                    List<ParamData> textParams = null;
+                    ParamData jpParam = null;
+                    ParamData enParam = null;
+
+                    if (line.opcode.Equals("MESSAGE") || line.opcode.Equals("CHOICE"))
+                    {
+                        textParams = line.paramDatas.Where(x => exportDataTypes.Contains(x.type)).ToList();
+                        jpParam = textParams[0];
+                        enParam = textParams[1];
+                    }
+                    else if (line.opcode.Equals("VARSTR"))
+                    {
+                        jpParam = line.paramDatas[2];
+                        enParam = new ParamData(DataType.StringUnicode, "", "");
+                        /*
+                        if (jpParam.valueString.Contains("花が綺麗だと話しかけられた貴方は"))
+                        {
+                            enParam = new ParamData(DataType.StringUnicode, "", "");
+                        } else if (jpParam.valueString.Contains("Which mirror will you choose?") || jpParam.valueString.Contains("How will you react to this behavior?"))
+                        {
+                            enParam = jpParam;
+                            jpParam = new ParamData(DataType.StringUnicode, "", "");
+                        } else
+                        {
+                            enParam = script.lines[i + 1].paramDatas[2];
+                            i++;
+                        } */
+                    }
 
                     CsvLine csvLine = FormatCsvLine(line, jpParam, enParam);
                     if (!string.IsNullOrEmpty(csvLine.Japanese.Trim()) || !string.IsNullOrEmpty(csvLine.English.Trim()))
@@ -299,10 +325,11 @@ namespace ProtScript
                             csvLine.Prefix + "_" + csvLine.NameJp + "_" + csvLine.NameEn,
                             csvLine.Japanese,
                             csvLine.English);
+                        Console.WriteLine(csvString);
                         sw.WriteLine(csvString);
                     }
                 }
-            });
+            }
             sw.Close();
 
             // Save table name

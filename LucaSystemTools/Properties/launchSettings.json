@@ -27,6 +27,10 @@
     "Split CSV": {
       "commandName": "Project",
       "commandLineArgs": "-t csv -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\VIE_Taishou_x_Alice_All_in_One_010096000CA38000_NinSwitch - SCRIPT.csv\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\CSV_Translated\" --split-csv"
+    },
+    "CSV Export": {
+      "commandName": "Project",
+      "commandLineArgs": "-t scr -m export -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\LucaScript\\_VARSTR\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\JSON\\_VARSTR\" -c \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.1 - Scripts\\TAIALI_OPCODE.txt\" -old -json -csv"
     }
   }
 }
