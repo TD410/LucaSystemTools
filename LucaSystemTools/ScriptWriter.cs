@@ -300,7 +300,7 @@ namespace ProtScript
                     // Char khac
                     else
                     {
-                        var charWidth = fontWidth[character];
+                        var charWidth = fontWidth.ContainsKey(character) ? fontWidth[character] : 0;
                         lengthWidth += charWidth;
                     }
                     if (lengthWidth > MAX_WIDTH)
