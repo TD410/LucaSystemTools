@@ -6,6 +6,10 @@ using Newtonsoft.Json;
 using LucaSystemTools;
 using ProtScript.Entity;
 using Microsoft.VisualBasic.FileIO;
+using CsvHelper;
+using System.Globalization;
+using CsvHelper.Configuration.Attributes;
+using CsvHelper.Configuration;
 
 namespace ProtScript
 {
@@ -197,6 +201,8 @@ namespace ProtScript
             return fontWidth;
         }
 
+        private int carryOverLineWidth = 0;
+
         private void ProcessCSVRow(
             List<(string from, string to)> table, 
             Dictionary<string, string> tableName, 
@@ -229,12 +235,18 @@ namespace ProtScript
                 nameTranslated = nameTranslated.Replace(tableReplace.from, tableReplace.to);
             }
 
-            // Clean up input
-            vietnamese = vietnamese.Replace("\n", " ").Replace("\r", "").Replace("$n", " ").Replace("  ", " ").TrimEnd();
-            if (vietnamese.EndsWith("'")) vietnamese = vietnamese.Remove(vietnamese.Length - 1) + "”";
+            // Clean up wrong closing brackets
+            if (vietnamese.EndsWith("' ")) vietnamese = vietnamese.Substring(0, vietnamese.Length - 2) + "”";
+
+            // Clear new lines
+            vietnamese = vietnamese.Replace("\n", " ").Replace("\r", "").Replace("$n", " ").Replace("  ", " ");
 
             // Calculate new line
             vietnamese = ProcessCSVRow_CaculateNewLine(vietnamese, fields[2], fontWidth);
+
+            // Reduce font size
+            // nameTranslated = "$S022" + nameTranslated;
+            // vietnamese = "$S022" + vietnamese;
 
             // Construct string
             string fullLineOriginal = "";
@@ -283,16 +295,16 @@ namespace ProtScript
 
         private string ProcessCSVRow_CaculateNewLine(string vietnamese, string vnBeforeReplace, Dictionary<char, int> fontWidth)
         {
+            var lengthWidth = vnBeforeReplace.StartsWith(" ") ? carryOverLineWidth : 0;
             if (vietnamese.Contains("$3") || !vietnamese.Contains("$d"))
             {
-                const int MAX_WIDTH = 1150;
-                var lengthWidth = 0;
+                const int MAX_WIDTH = 1150; // 1300 //font20; // 
                 var spaceIdx = -1;
                 var newlineIndexes = new List<int>();
                 for (var i = 0; i < vietnamese.Length; i++)
                 {
                     var character = vietnamese[i];
-                    // Ten Yurika = 83, lay 100 cho an toan
+                    // Ten Yurika = 75, lay 100 cho an toan
                     if (character.Equals("$") && vietnamese[i + 1].Equals("3"))
                     {
                         lengthWidth += 100;
@@ -328,6 +340,7 @@ namespace ProtScript
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
                 if (newlineIndexes.Count > 2) Console.WriteLine("Warning: Line overflow at:\n{0}", vnBeforeReplace);
             }
+            carryOverLineWidth = lengthWidth;
             return vietnamese;
         }
 
@@ -373,7 +386,7 @@ namespace ProtScript
             var textParam = codeLine.paramDatas[index.paramIdx];
             var lengthParam = codeLine.paramDatas[index.paramIdx - 1];
 
-            if (!textParam.valueString.Trim().Equals(originalLine.Trim()) && false) throw new Exception("ParamData doesn't contain original japanese text");
+            // if (!textParam.valueString.Trim().Equals(originalLine.Trim()) && false) throw new Exception("ParamData doesn't contain original japanese text");
 
             byte[] bytes = Encoding.Unicode.GetBytes(translatedLine);
             textParam.valueString = translatedLine;
@@ -455,7 +468,7 @@ namespace ProtScript
                     for (var j = 0; j < line.paramDatas.Count; j++)
                     {
                         var paramData = line.paramDatas[j];
-                        if (paramData.type == DataType.StringUnicode && paramData.valueString != null && !string.IsNullOrEmpty(paramData.valueString.Trim()))
+                        if (paramData.type == DataType.StringUnicode && paramData.valueString != null && !string.IsNullOrEmpty(paramData.valueString))
                         {
                             // japanese
                             indexes.Add((i, j));
@@ -467,6 +480,18 @@ namespace ProtScript
                 }
             }
             return indexes;
+        }
+
+        public class CSVFileRecord
+        {
+            [Index(0)]
+            public string ID { get; set; }
+            [Index(1)]
+            public string Japanese { get; set; }
+            [Index(2)]
+            public string Vietnamese { get; set; }
+            [Index(3)]
+            public string English { get; set; }
         }
 
         public bool LoadCsv(string path, string outPath)
@@ -489,16 +514,33 @@ namespace ProtScript
             // Read CSV
             var translatedLines = new List<string>();
             var originalLines = new List<string>();
+            var config = new CsvConfiguration(CultureInfo.InvariantCulture)
+            {
+                HasHeaderRecord = false,
+            };
+            using (var reader = new StreamReader(path))
+            using (var csv = new CsvReader(reader, config))
+            {
+                while (csv.Read())
+                {
+                    var row = csv.GetRecord<CSVFileRecord>();
+                    string[] fields = new string[4] { row.ID, row.Japanese, row.Vietnamese, row.English };
+                    ProcessCSVRow(table, tableName, fontWidth, translatedLines, originalLines, fields);
+                }
+            }
+            /*
             using (TextFieldParser parser = new TextFieldParser(path))
             {
+                
+                
                 parser.TextFieldType = FieldType.Delimited;
                 parser.SetDelimiters(",");
                 while (!parser.EndOfData)
                 {
                     // Process row
                     ProcessCSVRow(table, tableName, fontWidth, translatedLines, originalLines, parser.ReadFields());
-                }
-            }
+                } 
+            }*/
 
             // Match Csv line to script line
             var indexes = IndexCsvToScript();
@@ -518,6 +560,7 @@ namespace ProtScript
 
         public void LoadJson(string path)
         {
+            Console.WriteLine(Path.GetFileName(path));
             JsonSerializerSettings jsetting = new JsonSerializerSettings();
             jsetting.DefaultValueHandling = DefaultValueHandling.Ignore;
             StreamReader sr = new StreamReader(path, Encoding.UTF8);
