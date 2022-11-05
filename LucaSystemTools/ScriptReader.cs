@@ -291,34 +291,12 @@ namespace ProtScript
                     {
                         jpParam = line.paramDatas[2];
                         enParam = new ParamData(DataType.StringUnicode, "", "");
-                        /*
-                        if (jpParam.valueString.Contains("花が綺麗だと話しかけられた貴方は"))
-                        {
-                            enParam = new ParamData(DataType.StringUnicode, "", "");
-                        } else if (jpParam.valueString.Contains("Which mirror will you choose?") || jpParam.valueString.Contains("How will you react to this behavior?"))
-                        {
-                            enParam = jpParam;
-                            jpParam = new ParamData(DataType.StringUnicode, "", "");
-                        } else
-                        {
-                            enParam = script.lines[i + 1].paramDatas[2];
-                            i++;
-                        } */
                     }
 
                     CsvLine csvLine = FormatCsvLine(line, jpParam, enParam);
                     if (!string.IsNullOrEmpty(csvLine.Japanese.Trim()) || !string.IsNullOrEmpty(csvLine.English.Trim()))
                     {
                         CsvLine.CountAll++;
-                        // string csvString = String.Format("\"{7}_{0}_{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",{6},",
-                        //    csvLine.ID,
-                        //    csvLine.Prefix,
-                        //    csvLine.NameJp,
-                        //    csvLine.Japanese,
-                        //    csvLine.NameEn,
-                        //    csvLine.English,
-                        //    csvLine.NameVn,
-                        //    CsvLine.CountAll);
                         string csvString = String.Format("{0}_[{1}]_{2},\"{3}\",,\"{4}\"",
                             CsvLine.CountAll,
                             line.position,
@@ -551,6 +529,11 @@ namespace ProtScript
                     case DataType.StringUnicode:
                     case DataType.StringSJIS:
                     case DataType.StringUTF8:
+                        if (value.nullable && codeOffset + 4 > codeLength)
+                        {
+                            nullableSkip = true;
+                            break;
+                        }
                         if (type == DataType.StringUnicode)
                         {
                             dataStr = Encoding.Unicode.GetString(ReadStringDoubleEnd());

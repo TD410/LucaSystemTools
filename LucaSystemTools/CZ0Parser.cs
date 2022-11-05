@@ -40,6 +40,7 @@ namespace ProtImage
         {
             CZ0HeaderInfo cz0HeaderInfo = null;
             string infopath = path.Replace(".png", ".json");
+            
             if (File.Exists(infopath))
             {
                 cz0HeaderInfo = JsonConvert.DeserializeObject<CZ0HeaderInfo>(File.ReadAllText(infopath));
@@ -47,21 +48,43 @@ namespace ProtImage
             CZOutputInfo czOutput = new CZOutputInfo();
             
             Bitmap Picture = new Bitmap(new MemoryStream(File.ReadAllBytes(path)));
-            StructWriter Writer = new StructWriter(File.Open(path + ".cz0", FileMode.Create));
-            CZ0Header header;
+            StructWriter Writer = new StructWriter(File.Open(path.Replace(".png", ".cz0"), FileMode.Create));
+            CZ0Header header = new CZ0Header();
+            CZ0HeaderExtra headerEx = new CZ0HeaderExtra();
             if (cz0HeaderInfo == null)
             {
-                header.Signature = "CZ0";
-                header.HeaderLength = 0x40;
-                header.Width = (ushort)Picture.Width;
-                header.Heigth = (ushort)Picture.Height;
-                header.Colorbits = 32;
+                string headerTemplate = Path.Combine(Path.GetDirectoryName(path), "HEADER_TEMPLATE");
+                if (File.Exists(headerTemplate))
+                {
+                    var tuple = ExportHeader(headerTemplate);
+                    header = tuple.Item1;
+                    headerEx = tuple.Item2;
+                    header.Width = (ushort)Picture.Width;
+                    header.Heigth = (ushort)Picture.Height;
+                    headerEx.Width2 = (ushort)Picture.Width;
+                    headerEx.Height2 = (ushort)Picture.Height;
+                    headerEx.Width3 = (ushort)Picture.Width;
+                    headerEx.Height3 = (ushort)Picture.Height;
+                } 
+                else
+                {
+                    header.Signature = "CZ0";
+                    header.HeaderLength = 0x40;
+                    header.Width = (ushort)Picture.Width;
+                    header.Heigth = (ushort)Picture.Height;
+                    header.Colorbits = 32;
+                }
             }
             else
             {
                 header = cz0HeaderInfo.cz0Header;
             }
             Writer.WriteStruct(ref header);
+            if (headerEx.Extras != null)
+            {
+                Writer.WriteStruct(ref headerEx);
+                Writer.Write(headerEx.Extras);
+            }
             Writer.Seek(header.HeaderLength, SeekOrigin.Begin);
 
             if (header.Colorbits == 32)
@@ -221,7 +244,32 @@ namespace ProtImage
             public CZ0Header cz0Header;
             public Pixel32_BGRA[] ColorPanel;
         }
-     
+
+        public Tuple<CZ0Header, CZ0HeaderExtra> ExportHeader(string headerfile)
+        {
+            BinaryReader br = new BinaryReader(File.Open(headerfile, FileMode.Open));
+            byte[] Texture = br.ReadBytes((int)br.BaseStream.Length);
+
+            StructReader Reader = new StructReader(new MemoryStream(Texture));
+            CZ0Header Header = new CZ0Header();
+            Reader.ReadStruct(ref Header);
+
+            if (Header.Signature != "CZ0\x0")
+                throw new BadImageFormatException();
+
+            int extraLength = (int)(Header.HeaderLength - Reader.BaseStream.Position);
+            CZ0HeaderExtra HeaderEx = new CZ0HeaderExtra();
+            if (extraLength > 0)
+            {
+                Reader.ReadStruct(ref HeaderEx);
+                extraLength = (int)(Header.HeaderLength - Reader.BaseStream.Position);
+                if (extraLength > 0)
+                {
+                    HeaderEx.Extras = Reader.ReadBytes(extraLength);
+                }
+            }
+            return Tuple.Create(Header, HeaderEx);
+        }
 
         public Bitmap Export(byte[] Texture, string name = "")
         {
@@ -300,6 +348,20 @@ namespace ProtImage
         public byte Colorbits;
         //dynamic length
     }
+
+    public struct CZ0HeaderExtra
+    {
+        public byte Unk1;
+        public ushort Unk2;
+        public uint zero;
+        public ushort Width2;
+        public ushort Height2;
+        public ushort Width3;
+        public ushort Height3;
+        [Ignore]
+        public byte[] Extras;
+    }
+
     public struct Pixel24_RGB
     {
         public byte R, G, B;
