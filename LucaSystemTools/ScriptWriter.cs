@@ -235,8 +235,25 @@ namespace ProtScript
                 nameTranslated = nameTranslated.Replace(tableReplace.from, tableReplace.to);
             }
 
-            // Clean up wrong closing brackets
+            // Clean up wrong brackets
             if (vietnamese.EndsWith("' ")) vietnamese = vietnamese.Substring(0, vietnamese.Length - 2) + "”";
+
+            if (string.IsNullOrEmpty(prefix) && !(vietnamese.StartsWith("“") && vietnamese.EndsWith("”")) && !vietnamese.StartsWith(" ") && vietnamese.Contains("'"))
+            {
+                int countSingleBracket = vietnamese.Split("'").Length - 1;
+                bool mismatchBracket = countSingleBracket > 0 && countSingleBracket % 2 == 1;
+                if (mismatchBracket)
+                {
+                    if (vietnamese.StartsWith("“"))
+                    {
+                        vietnamese = vietnamese.Replace("“", "'");
+                    }
+                    else if (vietnamese.EndsWith("”"))
+                    {
+                        vietnamese = vietnamese.Replace("”", "'");
+                    }
+                }
+            }
 
             // Clear new lines
             vietnamese = vietnamese.Replace("\n", " ").Replace("\r", "").Replace("$n", " ").Replace("  ", " ");
@@ -295,10 +312,14 @@ namespace ProtScript
 
         private string ProcessCSVRow_CaculateNewLine(string vietnamese, string vnBeforeReplace, Dictionary<char, int> fontWidth)
         {
-            var lengthWidth = vnBeforeReplace.StartsWith(" ") ? carryOverLineWidth : 0;
+            var lengthWidth = 0;
+            if (vnBeforeReplace.StartsWith(" "))
+            {
+                lengthWidth = carryOverLineWidth;
+            }
             if (vietnamese.Contains("$3") || !vietnamese.Contains("$d"))
             {
-                const int MAX_WIDTH = 1150; // 1300 //font20; // 
+                const int MAX_WIDTH = 1120; // 1300 //font20; // 
                 var spaceIdx = -1;
                 var newlineIndexes = new List<int>();
                 for (var i = 0; i < vietnamese.Length; i++)
