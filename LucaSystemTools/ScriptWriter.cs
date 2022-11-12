@@ -305,6 +305,20 @@ namespace ProtScript
                 fullLineOriginal = fullLineOriginal.Replace("`@", "`　@");
                 fullLine = fullLine.Replace("`@", "`　@");
             }
+            // Story mode at the end of route, text center
+            else if (prefix == "" && english.StartsWith("$n") && english.Contains("$n$A1"))
+            {
+                // 11 lines total in a screen
+                int numLines = fullLine.Split("\n").Length;
+                int numNewLines = (11 - numLines)/2;
+                var prefixNewLine = "";
+                for (int i = 0; i < numNewLines; i++)
+                {
+                    prefixNewLine += "$n";
+                }
+                fullLine = prefixNewLine + "$A1" + fullLine.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
+                fullLineOriginal = fullLineOriginal.Replace("\n", "\n$A1").Replace("$n", "$n$A1");
+            }
 
             translatedLines.Add(fullLine);
             originalLines.Add(fullLineOriginal);
@@ -381,8 +395,8 @@ namespace ProtScript
 
                 WriteCsvToJson_UpdateCodeLine(index, codeLine, translatedLine, originalLine);
 
-                // Detect line overflow and add new line
-                if (translatedLine.Split("\n").Length > 3)
+                // Detect line overflow and add new line (if not text center screen)
+                if (translatedLine.Split("\n").Length > 3 && !translatedLine.Contains("$A1"))
                 {
                     WriteCsvToJson_AddNewCodeLine(index, jsetting, translatedLine, codeLine, addCodeLines);
                 }
@@ -549,19 +563,6 @@ namespace ProtScript
                     ProcessCSVRow(table, tableName, fontWidth, translatedLines, originalLines, fields);
                 }
             }
-            /*
-            using (TextFieldParser parser = new TextFieldParser(path))
-            {
-                
-                
-                parser.TextFieldType = FieldType.Delimited;
-                parser.SetDelimiters(",");
-                while (!parser.EndOfData)
-                {
-                    // Process row
-                    ProcessCSVRow(table, tableName, fontWidth, translatedLines, originalLines, parser.ReadFields());
-                } 
-            }*/
 
             // Match Csv line to script line
             var indexes = IndexCsvToScript();
