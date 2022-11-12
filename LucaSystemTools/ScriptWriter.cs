@@ -396,7 +396,7 @@ namespace ProtScript
                 WriteCsvToJson_UpdateCodeLine(index, codeLine, translatedLine, originalLine);
 
                 // Detect line overflow and add new line (if not text center screen)
-                if (translatedLine.Split("\n").Length > 3 && !translatedLine.Contains("$A1"))
+                if (translatedLine.Split("\n").Length > 3 && !(translatedLine.Contains("$A1") || translatedLine.Contains("`") || translatedLine.Contains("@")))
                 {
                     WriteCsvToJson_AddNewCodeLine(index, jsetting, translatedLine, codeLine, addCodeLines);
                 }
