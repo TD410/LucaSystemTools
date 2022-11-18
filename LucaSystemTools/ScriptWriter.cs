@@ -227,12 +227,18 @@ namespace ProtScript
             tableName.TryGetValue(nameJp, out nameTranslated);
             nameJp = string.IsNullOrEmpty(nameJp) ? "" : nameJp;
             nameTranslated = string.IsNullOrEmpty(nameTranslated) ? nameJp : nameTranslated;
+            // Special case: Gretel's name in SCE07_006.csv
+            if (ID == "37763_[2246]_`_男の子_Young Boy" || ID == "37765_[2688]_`_男の子_Young Boy")
+            {
+                nameTranslated = "Cậu trai";
+            }
 
             // Replace char table
             foreach (var tableReplace in table)
             {
                 vietnamese = vietnamese.Replace(tableReplace.from, tableReplace.to);
                 nameTranslated = nameTranslated.Replace(tableReplace.from, tableReplace.to);
+                
             }
 
             // Clean up wrong brackets
@@ -259,7 +265,15 @@ namespace ProtScript
             vietnamese = vietnamese.Replace("\n", " ").Replace("\r", "").Replace("$n", " ").Replace("  ", " ");
 
             // Calculate new line
-            vietnamese = ProcessCSVRow_CaculateNewLine(vietnamese, fields[2], fontWidth);
+            if (!vietnamese.Contains("#"))
+            {
+                vietnamese = ProcessCSVRow_CaculateNewLine(vietnamese, fields[2], fontWidth);
+            } else
+            {
+                var vietnameseParts = vietnamese.Split("#");
+                vietnamese = ProcessCSVRow_CaculateNewLine(vietnameseParts[0], fields[2], fontWidth, true) + "#" + ProcessCSVRow_CaculateNewLine(vietnameseParts[1], fields[2], fontWidth, true);
+            }
+            
 
             // Reduce font size
             // nameTranslated = "$S022" + nameTranslated;
@@ -324,7 +338,7 @@ namespace ProtScript
             originalLines.Add(fullLineOriginal);
         }
 
-        private string ProcessCSVRow_CaculateNewLine(string vietnamese, string vnBeforeReplace, Dictionary<char, int> fontWidth)
+        private string ProcessCSVRow_CaculateNewLine(string vietnamese, string vnBeforeReplace, Dictionary<char, int> fontWidth, bool is2Parts = false)
         {
             var lengthWidth = 0;
             if (vnBeforeReplace.StartsWith(" "))
@@ -339,10 +353,10 @@ namespace ProtScript
                 for (var i = 0; i < vietnamese.Length; i++)
                 {
                     var character = vietnamese[i];
-                    // Ten Yurika = 75, lay 100 cho an toan
-                    if (character.Equals("$") && vietnamese[i + 1].Equals("3"))
+                    // Ten Yurika = 105, (35*3) max 4 ky tu lay 140 cho an toan
+                    if (character == '$' && vietnamese[i + 1] == '3')
                     {
-                        lengthWidth += 100;
+                        lengthWidth += 140;
                     }
                     // Char khac
                     else
@@ -373,7 +387,10 @@ namespace ProtScript
                     vnBeforeReplace = vnBeforeReplace.Remove(newlineIdx, 1).Insert(newlineIdx, "\n");
                 }
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
-                if (newlineIndexes.Count > 2) Console.WriteLine("Warning: Line overflow at:\n{0}", vnBeforeReplace);
+                if (newlineIndexes.Count > 2 && is2Parts)
+                {
+                    Console.WriteLine("Warning: Line overflow with # at:\n{0}", vnBeforeReplace);
+                }
             }
             carryOverLineWidth = lengthWidth;
             return vietnamese;
@@ -396,9 +413,9 @@ namespace ProtScript
                 WriteCsvToJson_UpdateCodeLine(index, codeLine, translatedLine, originalLine);
 
                 // Detect line overflow and add new line (if not text center screen)
-                if (!translatedLine.Contains("$A1")) 
+                if (!translatedLine.Contains("$A1") && !translatedLine.Contains("#")) 
                 {
-                    if (translatedLine.Split("\n").Length > 3)
+                    if (translatedLine.Split("\n").Length == 4)
                     {
                         WriteCsvToJson_AddNewCodeLine(index, jsetting, translatedLine, codeLine, addCodeLines);
                     }

@@ -39,6 +39,10 @@
     "CZ0 Import": {
       "commandName": "Project",
       "commandLineArgs": "-t cz0 -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.4 - Images\\SYSCG.PAK\\Test\\EP1_SYS_TOGGLEMODE_EN.png\" -o \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.4 - Images\\SYSCG.PAK\\Test\\EP1_SYS_TOGGLEMODE_EN.cz0\""
+    },
+    "CZ1Import": {
+      "commandName": "Project",
+      "commandLineArgs": "-t cz1 -m import -f \"E:\\Visual Novel Pack\\Taisho x Alice\\TaiAli Switch\\3.4 - Images\\Test\\CG_KYOHAKU1_AOC.png\""
     }
   }
 }
